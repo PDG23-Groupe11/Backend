@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  labels:
+    component: api
+    app: grocerypal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: api
+      app: grocerypal 
+  template:
+    metadata:
+      labels:
+        app: grocerypal
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: heigpdg112023/pdg11-heig:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_ENDPOINT
+          # TODO
+          value: TODO
+        - name: DB_USER
+          # TODO
+          value: TODO
+        - name: GroceryPal
+          # TODO
+          value: TODO

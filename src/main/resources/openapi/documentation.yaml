@@ -1,0 +1,37 @@
+openapi: "3.0.3"
+info:
+  title: "Grocerypal API"
+  description: "dev API for the small grocery app"
+  version: "0.0.1"
+servers:
+# TODO
+  - url: "http://0.0.0.0:8080"
+paths:
+  /:
+    get:
+      description: "Hello World!"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Hello World!"
+  /status:
+    get:
+      description: "Get the app's status"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Still alive!\r\nhttps://www.youtube.com/watch?v=VuLktUzq23c"
+components:
+  schemas:
