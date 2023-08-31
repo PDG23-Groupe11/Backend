@@ -8,40 +8,32 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.sql.*
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToJsonElement
 
 fun Application.configureDatabases() {
-    // TODO passer à false pour utiliser DB externe!
-    val dbConnection: Connection = connectToPostgres(embedded = true)
-    val cityService = CityService(dbConnection)
+    val dbConnection: Connection = connectToPostgres(embedded = false)
+    val ingredientService = IngredientService(dbConnection)
     routing {
-        // Create city
-        post("/cities") {
-            val city = call.receive<City>()
-            val id = cityService.create(city)
-            call.respond(HttpStatusCode.Created, id)
+        // Read all ingredients
+        get("/ingredients") {
+            try {
+                val ingredients = ingredientService.readAll()
+
+                call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError)
+            }
         }
-        // Read city
-        get("/cities/{id}") {
+        // Read Ingredient
+        get("/ingredients/{id}") {
             val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
             try {
-                val city = cityService.read(id)
-                call.respond(HttpStatusCode.OK, city)
+                val ingredient = ingredientService.read(id)
+                call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.NotFound)
             }
-        }
-        // Update city
-        put("/cities/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            val user = call.receive<City>()
-            cityService.update(id, user)
-            call.respond(HttpStatusCode.OK)
-        }
-        // Delete city
-        delete("/cities/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            cityService.delete(id)
-            call.respond(HttpStatusCode.OK)
         }
     }
 }
