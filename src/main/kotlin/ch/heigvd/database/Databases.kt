@@ -15,24 +15,26 @@ fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
     routing {
-        // Read all ingredients
-        get("/ingredients") {
-            try {
-                val ingredients = ingredientService.readAll()
+        route("/ingredients") {
+            // Read all ingredients
+            get() {
+                try {
+                    val ingredients = ingredientService.readAll()
 
-                call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError)
+                }
             }
-        }
-        // Read Ingredient
-        get("/ingredients/{id}") {
-            val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-            try {
-                val ingredient = ingredientService.read(id)
-                call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.NotFound)
+            // Read Ingredient
+            get("{id}") {
+                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
+                try {
+                    val ingredient = ingredientService.read(id)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
             }
         }
     }
@@ -40,19 +42,6 @@ fun Application.configureDatabases() {
 
 /**
  * Makes a connection to a Postgres database.
- *
- * In order to connect to your running Postgres process,
- * please specify the following parameters in your configuration file:
- * - postgres.url -- Url of your running database process.
- * - postgres.user -- Username for database connection
- * - postgres.password -- Password for database connection
- *
- * If you don't have a database process running yet, you may need to [download]((https://www.postgresql.org/download/))
- * and install Postgres and follow the instructions [here](https://postgresapp.com/).
- * Then, you would be able to edit your url,  which is usually "jdbc:postgresql://host:port/database", as well as
- * user and password values.
- *
- *
  * @param embedded -- if [true] defaults to an embedded database for tests that runs locally in the same process.
  * In this case you don't have to provide any parameters in configuration file, and you don't have to run a process.
  *

@@ -7,6 +7,44 @@ servers:
 # TODO
   - url: "http://0.0.0.0:8080"
 paths:
+  /ingredients:
+    get:
+      description: "Read all ingredients"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /ingredients/{id}:
+    get:
+      description: "Read Ingredient"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "object"
   /:
     get:
       description: "Hello World!"
@@ -27,11 +65,9 @@ paths:
         "200":
           description: "OK"
           content:
-            text/plain:
+            '*/*':
               schema:
                 type: "string"
               examples:
                 Example#1:
-                  value: "Still alive!\r\nhttps://www.youtube.com/watch?v=VuLktUzq23c"
-components:
-  schemas:
+                  value: "Still alive!\nhttps://www.youtube.com/watch?v=VuLktUzq23c"
