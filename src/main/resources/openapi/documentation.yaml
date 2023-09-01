@@ -16,7 +16,9 @@ paths:
           content:
             '*/*':
               schema:
-                type: "string"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ingredient"
         "500":
           description: "Internal Server Error"
           content:
@@ -38,7 +40,73 @@ paths:
           content:
             '*/*':
               schema:
-                type: "string"
+                $ref: "#/components/schemas/Ingredient"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /ingredients/from_recipe/{id}:
+    get:
+      description: "Read all Ingredients linked to a recipe, with their quantity"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ingredient"
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /recipes:
+    get:
+      description: "Read all generic recipes"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /recipes/personal/{userId}:
+    get:
+      description: "Read all personal recipes.\n The userID requirement is temporary, and will be changed in the future"
+      parameters:
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
         "404":
           description: "Not Found"
           content:
@@ -47,7 +115,7 @@ paths:
                 type: "object"
   /:
     get:
-      description: "Hello World!"
+      description: "Service home page"
       responses:
         "200":
           description: "OK"
@@ -60,7 +128,7 @@ paths:
                   value: "Hello World!"
   /status:
     get:
-      description: "Get the app's status"
+      description: "Basic status report"
       responses:
         "200":
           description: "OK"
@@ -71,3 +139,44 @@ paths:
               examples:
                 Example#1:
                   value: "Still alive!\nhttps://www.youtube.com/watch?v=VuLktUzq23c"
+
+components:
+  schemas:
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nb_per:
+          type: integer
+          description: Number of person this recipe is made for
+        prep_time:
+          type: integer
+          description: Preparation time, in minutes
+        instruction:
+          type: string
+          description: Recipe instructions, formatted in markdown
+    Ingredient:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        fiber:
+          type: number
+          description: grams of fiber per 100g
+        protein:
+          type: number
+          description: grams of protein per 100g
+        energy:
+          type: integer
+          description: calories
+        carb:
+          type: number
+          description: grams of carb per 100g
+        fat:
+          type: number
+          description: grams of fat per 100g

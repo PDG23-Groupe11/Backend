@@ -1,5 +1,4 @@
 package ch.heigvd.database
-// TODO EXEMPLE, A REMPLACER
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -14,6 +13,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
+    val recipeService = RecipeService(dbConnection)
     routing {
         route("/ingredients") {
             // Read all ingredients
@@ -32,6 +32,41 @@ fun Application.configureDatabases() {
                 try {
                     val ingredient = ingredientService.read(id)
                     call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            }
+            // Read all Ingredients linked to a recipe, with their quantity
+            get("/from_recipe/{id}") {
+                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
+                try {
+                    val ingredients = ingredientService.readFromRecipe(id)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            }
+        }
+
+        route("/recipes") {
+            // Read all generic recipes
+            get() {
+                try {
+                    val recipes = recipeService.readAllGeneric()
+
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError)
+                }
+            }
+            // Read all personal recipes
+            // TODO Protect
+            // TODO get automatically the user id
+            get("/personal/{userId}") {
+                val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                try {
+                    val recipes = recipeService.readAllPersonal(id)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.NotFound)
                 }
