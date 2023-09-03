@@ -26,14 +26,16 @@ fun Application.configureDatabases() {
                     call.respond(HttpStatusCode.InternalServerError)
                 }
             }
-            // Read Ingredient
-            get("{id}") {
-                val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
-                try {
-                    val ingredient = ingredientService.read(id)
-                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.NotFound)
+            route("{id}") {
+                // Read Ingredient
+                get() {
+                    val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
+                    try {
+                        val ingredient = ingredientService.read(id)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredient).toString())
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
                 }
             }
             // Read all Ingredients linked to a recipe, with their quantity
@@ -59,16 +61,20 @@ fun Application.configureDatabases() {
                     call.respond(HttpStatusCode.InternalServerError)
                 }
             }
-            // Read all personal recipes
             // TODO Protect
             // TODO get automatically the user id
-            get("/personal/{userId}") {
-                val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
-                try {
-                    val recipes = recipeService.readAllPersonal(id)
-                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.NotFound)
+            route("/personal") {
+                route("{userId}") {
+                    // Read all personal recipes
+                    get() {
+                        val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                        try {
+                            val recipes = recipeService.readAllPersonal(id)
+                            call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
+                        } catch (e: Exception) {
+                            call.respond(HttpStatusCode.NotFound)
+                        }
+                    }
                 }
             }
         }
