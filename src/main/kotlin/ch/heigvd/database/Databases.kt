@@ -13,7 +13,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
-    val recipeService = RecipeService(dbConnection)
+    val recipeService = RecipeService(dbConnection, ingredientService)
     routing {
         route("/ingredients") {
             // Read all ingredients
@@ -73,6 +73,19 @@ fun Application.configureDatabases() {
                             call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
                         } catch (e: Exception) {
                             call.respond(HttpStatusCode.NotFound)
+                        }
+                    }
+                    // Create a new personal recipe
+                    post() {
+                        val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                        try {
+                            val recipeJson = call.receiveText()
+                            val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
+
+                            recipeService.createPersonal(userId, recipe)
+                        } catch (e: Exception) {
+                            System.console().printf("%s", e)
+                            call.respond(HttpStatusCode.NotAcceptable)
                         }
                     }
                 }

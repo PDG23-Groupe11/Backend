@@ -9,12 +9,15 @@ import java.sql.ResultSet
 data class Ingredient(val id: Int, val name: String, val fiber: Double, val protein: Double, val energy: Int, val carb: Double, val fat: Double)
 
 class IngredientService(private val connection: Connection) {
+    @Serializable
+    data class Quantity(val ingredientId: Int, val unitId : Int, val quantity: Double)
     companion object {
         private const val SELECT_ALL_INGREDIENTS = "SELECT * FROM grocerypal.ingredient;"
         private const val SELECT_INGREDIENT = "SELECT * FROM grocerypal.ingredient WHERE id = ?"
         private const val SELECT_IN_RECIPE = "SELECT * FROM grocerypal.ingredient " +
                 "         INNER JOIN grocerypal.in_recipe_list irl on ingredient.id = irl.ingredient_id " +
                 "WHERE recipe_id = ?"
+        private const val INSERT_IN_RECIPE = "INSERT INTO grocerypal.in_recipe_list (recipe_id, ingredient_id, unit_id, quantity) VALUES (?,?,?,?)"
 
     }
 
@@ -68,4 +71,16 @@ class IngredientService(private val connection: Connection) {
         }
         return@withContext list
     }
+    // Insert an ingredient in a recipe
+    suspend fun insertInRecipe(recipeId:Int, quantity: Quantity) = withContext(Dispatchers.IO) {
+        val statement = connection.prepareStatement(INSERT_IN_RECIPE)
+        statement.setInt(1, recipeId)
+        statement.setInt(2, quantity.ingredientId)
+        statement.setInt(3, quantity.unitId)
+        statement.setDouble(4, quantity.quantity)
+
+        // TODO check if succeeded
+        statement.execute()
+    }
+
 }
