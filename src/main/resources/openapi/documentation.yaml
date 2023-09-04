@@ -70,7 +70,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Ingredient"
+                  $ref: "#/components/schemas/Ingredient_Quantity"
               examples:
                 simple_recipe:
                   value: [{"id":6,"name":"Bacon","fiber":0.0,"protein":39.0,"energy":476,"carb":0.5,"fat":34.1,"unitId":3,"quantity":1},{"id":8,"name":"Oeuf","fiber":0.0,"protein":12.7,"energy":140,"carb":0.27,"fat":9.83,"unitId":8,"quantity":12}]
@@ -218,6 +218,34 @@ components:
         fat:
           type: number
           description: grams of fat per 100g
+    Ingredient_Quantity:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        fiber:
+          type: number
+          description: grams of fiber per 100g
+        protein:
+          type: number
+          description: grams of protein per 100g
+        energy:
+          type: integer
+          description: calories
+        carb:
+          type: number
+          description: grams of carb per 100g
+        fat:
+          type: number
+          description: grams of fat per 100g
+        unit_id:
+          type: integer
+          description: The unit for the quantity field
+        quantity:
+          type: integer
+          description: The quantity of the ingredient in the list/recipe
     CompleteRecipe:
         type: object
         properties:
