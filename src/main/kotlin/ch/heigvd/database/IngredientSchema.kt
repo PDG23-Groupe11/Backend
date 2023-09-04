@@ -10,7 +10,7 @@ data class Ingredient(val id: Int, val name: String, val fiber: Double, val prot
 
 class IngredientService(private val connection: Connection) {
     @Serializable
-    data class Quantity(val ingredientId: Int, val unitId : Int, val quantity: Double)
+    data class Quantity(val ingredientId: Int, val unitId : Int, val quantity: Int)
     companion object {
         private const val SELECT_ALL_INGREDIENTS = "SELECT * FROM grocerypal.ingredient;"
         private const val SELECT_INGREDIENT = "SELECT * FROM grocerypal.ingredient WHERE id = ?"
@@ -77,7 +77,7 @@ class IngredientService(private val connection: Connection) {
         statement.setInt(1, recipeId)
         statement.setInt(2, quantity.ingredientId)
         statement.setInt(3, quantity.unitId)
-        statement.setDouble(4, quantity.quantity)
+        statement.setInt(4, quantity.quantity)
 
         // TODO check if succeeded
         statement.execute()
