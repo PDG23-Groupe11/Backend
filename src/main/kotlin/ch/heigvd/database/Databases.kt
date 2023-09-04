@@ -91,6 +91,35 @@ fun Application.configureDatabases() {
                 }
             }
         }
+        // TODO protect
+        // TODO get automatically the user id
+        route("/list") {
+            route("{userid}") {
+                // Read the user's list
+                get() {
+                    val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    try {
+                        val ingredients = ingredientService.readFromList(id)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
+                }
+                // Create a new personal recipe
+                post() {
+                    val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    try {
+                        val quantitiesJson = call.receiveText()
+                        val quantities = Json.decodeFromString<List<IngredientService.Quantity>>(quantitiesJson)
+
+                        ingredientService.setList(userId, quantities)
+                        call.respond(HttpStatusCode.OK)
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.NotAcceptable)
+                    }
+                }
+            }
+        }
     }
 }
 

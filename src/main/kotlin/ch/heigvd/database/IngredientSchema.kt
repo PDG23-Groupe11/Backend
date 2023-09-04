@@ -21,6 +21,12 @@ class IngredientService(private val connection: Connection) {
                 "        INNER JOIN grocerypal.in_recipe_list irl on ingredient.id = irl.ingredient_id\n" +
                 "    WHERE recipe_id = ?"
         private const val INSERT_IN_RECIPE = "INSERT INTO grocerypal.in_recipe_list (recipe_id, ingredient_id, unit_id, quantity) VALUES (?,?,?,?)"
+        private const val SELECT_IN_LIST = "SELECT id, name, fiber, protein, energy, carb, fat, unit_id, quantity\n" +
+                "FROM grocerypal.ingredient\n" +
+                "         INNER JOIN grocerypal.in_shopping_list isl on ingredient.id = isl.ingredient_id\n" +
+                "WHERE profile_id = ?\n"
+        private const val DELETE_LIST = "DELETE FROM grocerypal.in_shopping_list WHERE profile_id = ?"
+        private const val INSERT_IN_LIST = "INSERT INTO grocerypal.in_shopping_list (profile_id, ingredient_id, unit_id, quantity) VALUES (?,?,?,?)"
 
     }
 
@@ -92,6 +98,53 @@ class IngredientService(private val connection: Connection) {
     suspend fun insertInRecipe(recipeId:Int, quantity: Quantity) = withContext(Dispatchers.IO) {
         val statement = connection.prepareStatement(INSERT_IN_RECIPE)
         statement.setInt(1, recipeId)
+        statement.setInt(2, quantity.ingredientId)
+        statement.setInt(3, quantity.unitId)
+        statement.setInt(4, quantity.quantity)
+
+        // TODO check if succeeded
+        statement.execute()
+    }
+
+    // Read all ingredients listed in a shopping list, with their quantity
+    suspend fun readFromList(userId: Int) : ArrayList<Ingredient_Quantity> = withContext(Dispatchers.IO) {
+        val statement = connection.prepareStatement(SELECT_IN_LIST)
+        statement.setInt(1, userId)
+        val resultSet = statement.executeQuery()
+
+        val list : ArrayList<Ingredient_Quantity> = ArrayList()
+
+        while (resultSet.next()) {
+            list.add(resultSetToIngredient_Quantity(resultSet))
+        }
+        return@withContext list
+    }
+
+    // Rewrite the content of a shopping list
+    suspend fun setList(userId: Int, quantities : List<Quantity>) = withContext(Dispatchers.IO) {
+        connection.createStatement().execute("BEGIN TRANSACTION ;")
+        try {
+            // delete the existing list
+            val delStatement = connection.prepareStatement(DELETE_LIST)
+            delStatement.setInt(1, userId)
+            delStatement.execute()
+
+            // Add all the items
+            for (quantity in quantities) {
+                insertInList(userId, quantity)
+            }
+            // if successful, commit the changes
+            connection.createStatement().execute("COMMIT;")
+        } catch (e : Exception) {
+            connection.createStatement().execute("ROLLBACK;")
+            throw e
+        }
+    }
+
+    // Insert a single ingredient in a recipe
+    suspend fun insertInList(userId:Int, quantity: Quantity) = withContext(Dispatchers.IO) {
+        val statement = connection.prepareStatement(INSERT_IN_LIST)
+        statement.setInt(1, userId)
         statement.setInt(2, quantity.ingredientId)
         statement.setInt(3, quantity.unitId)
         statement.setInt(4, quantity.quantity)
