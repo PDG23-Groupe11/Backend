@@ -11,12 +11,15 @@ data class Ingredient(val id: Int, val name: String, val fiber: Double, val prot
 class IngredientService(private val connection: Connection) {
     @Serializable
     data class Quantity(val ingredientId: Int, val unitId : Int, val quantity: Int)
+    @Serializable
+    data class Ingredient_Quantity(val id: Int, val name: String, val fiber: Double, val protein: Double, val energy: Int, val carb: Double, val fat: Double, val unitId : Int, val quantity: Int)
     companion object {
         private const val SELECT_ALL_INGREDIENTS = "SELECT * FROM grocerypal.ingredient;"
         private const val SELECT_INGREDIENT = "SELECT * FROM grocerypal.ingredient WHERE id = ?"
-        private const val SELECT_IN_RECIPE = "SELECT * FROM grocerypal.ingredient " +
-                "         INNER JOIN grocerypal.in_recipe_list irl on ingredient.id = irl.ingredient_id " +
-                "WHERE recipe_id = ?"
+        private const val SELECT_IN_RECIPE = "SELECT id, name, fiber, protein, energy, carb, fat, unit_id, quantity\n" +
+                "    FROM grocerypal.ingredient\n" +
+                "        INNER JOIN grocerypal.in_recipe_list irl on ingredient.id = irl.ingredient_id\n" +
+                "    WHERE recipe_id = ?"
         private const val INSERT_IN_RECIPE = "INSERT INTO grocerypal.in_recipe_list (recipe_id, ingredient_id, unit_id, quantity) VALUES (?,?,?,?)"
 
     }
@@ -31,6 +34,20 @@ class IngredientService(private val connection: Connection) {
         val carb    = resultSet.getDouble("carb")
         val fat     = resultSet.getDouble("fat")
         return Ingredient(id, name, fiber, protein, energy, carb, fat)
+    }
+
+    // resultSet must not be empty!
+    private fun resultSetToIngredient_Quantity(resultSet: ResultSet) : Ingredient_Quantity{
+        val id      = resultSet.getInt("id")
+        val name    = resultSet.getString("name")
+        val fiber   = resultSet.getDouble("fiber")
+        val protein = resultSet.getDouble("protein")
+        val energy  = resultSet.getInt("energy")
+        val carb    = resultSet.getDouble("carb")
+        val fat     = resultSet.getDouble("fat")
+        val unit_id = resultSet.getInt("unit_id")
+        val quantity= resultSet.getInt("quantity")
+        return Ingredient_Quantity(id, name, fiber, protein, energy, carb, fat, unit_id, quantity)
     }
 
     // Read an Ingredient
@@ -59,15 +76,15 @@ class IngredientService(private val connection: Connection) {
     }
 
     // Read all ingredients listed in a recipe, with their quantity
-    suspend fun readFromRecipe(recipeId: Int) : ArrayList<Ingredient> = withContext(Dispatchers.IO) {
+    suspend fun readFromRecipe(recipeId: Int) : ArrayList<Ingredient_Quantity> = withContext(Dispatchers.IO) {
         val statement = connection.prepareStatement(SELECT_IN_RECIPE)
         statement.setInt(1, recipeId)
         val resultSet = statement.executeQuery()
 
-        val list : ArrayList<Ingredient> = ArrayList()
+        val list : ArrayList<Ingredient_Quantity> = ArrayList()
 
         while (resultSet.next()) {
-            list.add(resultSetToIngredient(resultSet))
+            list.add(resultSetToIngredient_Quantity(resultSet))
         }
         return@withContext list
     }
