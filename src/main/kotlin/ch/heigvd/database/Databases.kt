@@ -83,8 +83,8 @@ fun Application.configureDatabases() {
                             val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
 
                             recipeService.createPersonal(userId, recipe)
+                            call.respond(HttpStatusCode.OK)
                         } catch (e: Exception) {
-                            System.console().printf("%s", e)
                             call.respond(HttpStatusCode.NotAcceptable)
                         }
                     }
