@@ -113,6 +113,29 @@ paths:
             '*/*':
               schema:
                 type: "object"
+    post:
+      description: "Add a personnal recipe.\n The userID requirement is temporary, and will be changed in the future"
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Recipe"
+        "406":
+          description: "Not Acceptable"
+          content:
+            '*/*':
+              schema:
+                type: "object"
   /:
     get:
       description: "Service home page"
@@ -180,3 +203,20 @@ components:
         fat:
           type: number
           description: grams of fat per 100g
+    CompleteRecipe:
+        type: object
+        properties:
+          recipe:
+            $ref: "#/components/schemas/Recipe"
+          ingredients:
+            type: array
+            items:
+              type: object
+              properties:
+                ingredientId:
+                  type: integer
+                unitId:
+                  type: integer
+                quantity:
+                  type: number
+
