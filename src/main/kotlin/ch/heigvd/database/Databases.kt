@@ -109,10 +109,10 @@ fun Application.configureDatabases() {
                 post() {
                     val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
                     try {
-                        val quantitiesJson = call.receiveText()
-                        val quantities = Json.decodeFromString<List<IngredientService.Quantity>>(quantitiesJson)
+                        val ingredientsJson = call.receiveText()
+                        val ingredients = Json.decodeFromString<List<IngredientService.InList>>(ingredientsJson)
 
-                        ingredientService.setList(userId, quantities)
+                        ingredientService.setList(userId, ingredients)
                         call.respond(HttpStatusCode.OK)
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotAcceptable)
