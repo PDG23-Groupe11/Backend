@@ -220,7 +220,7 @@ paths:
           description: "Image not found"
 
     post:
-      description: "Receive new/updated pictures"
+      description: "Upload new / replace recipe pictures"
       parameters:
         - name: "recipeId"
           in: "path"
@@ -229,7 +229,7 @@ paths:
             type: "integer"
       requestBody:
         content:
-          image/*:
+          multipart/form-data:
             schema:
               type: string
               format: byte
