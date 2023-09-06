@@ -133,7 +133,7 @@ paths:
     get:
       description: "Read all Ingredients in a shopping list, with their quantity"
       parameters:
-        - name: "id"
+        - name: "userid"
           in: "path"
           required: true
           schema:
@@ -149,7 +149,7 @@ paths:
                   $ref: "#/components/schemas/Ingredient_InList"
               examples:
                 simple_recipe:
-                  value: [ { "id": 2,"name": "Hareng", "unitId": 8,"quantity": 6, "buy": true },{ "id": 3,"name": "Champignon de Paris","unitId": 2,"quantity": 500, "buy": false },{ "id": 1,"name": "Eau","unitId": 7,"quantity": 6, "buy": false } ]
+                  value: [ { "id": 2,"unitId": 8,"quantity": 6, "buy": true },{ "id": 3,"unitId": 2,"quantity": 500, "buy": false },{ "id": 1,"unitId": 7,"quantity": 6, "buy": false } ]
         "404":
           description: "Not Found"
     post:
@@ -330,8 +330,6 @@ components:
       properties:
         id:
           type: integer
-        name:
-          type: string
         unit_id:
           type: integer
           description: The unit for the quantity field

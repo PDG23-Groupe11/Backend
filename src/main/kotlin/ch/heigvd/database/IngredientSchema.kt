@@ -14,7 +14,7 @@ class IngredientService(private val connection: Connection) {
     @Serializable
     data class InRecipe(val id: Int, val name: String, val fiber: Double, val protein: Double, val energy: Int, val carb: Double, val fat: Double, val unitId : Int, val quantity: Int)
     @Serializable
-    data class InList(val id: Int, val name: String, val unitId : Int, val quantity: Int, val buy : Boolean)
+    data class InList(val id: Int, val unitId : Int, val quantity: Int, val buy : Boolean)
     companion object {
         private const val SELECT_ALL_INGREDIENTS = "SELECT * FROM grocerypal.ingredient;"
         private const val SELECT_INGREDIENT = "SELECT * FROM grocerypal.ingredient WHERE id = ?"
@@ -23,7 +23,7 @@ class IngredientService(private val connection: Connection) {
                 "        INNER JOIN grocerypal.in_recipe_list irl on ingredient.id = irl.ingredient_id\n" +
                 "    WHERE recipe_id = ?"
         private const val INSERT_IN_RECIPE = "INSERT INTO grocerypal.in_recipe_list (recipe_id, ingredient_id, unit_id, quantity) VALUES (?,?,?,?)"
-        private const val SELECT_IN_LIST = "SELECT id, name, fiber, protein, energy, carb, fat, unit_id, quantity, buy\n" +
+        private const val SELECT_IN_LIST = "SELECT id, unit_id, quantity, buy\n" +
                 "FROM grocerypal.ingredient\n" +
                 "         INNER JOIN grocerypal.in_shopping_list isl on ingredient.id = isl.ingredient_id\n" +
                 "WHERE profile_id = ?\n"
@@ -60,11 +60,10 @@ class IngredientService(private val connection: Connection) {
     // resultSet must not be empty!
     private fun resultSetToInList(resultSet: ResultSet) : InList{
         val id      = resultSet.getInt("id")
-        val name    = resultSet.getString("name")
         val unit_id = resultSet.getInt("unit_id")
         val quantity= resultSet.getInt("quantity")
         val buy     = resultSet.getBoolean("buy")
-        return InList(id, name, unit_id, quantity, buy)
+        return InList(id, unit_id, quantity, buy)
     }
 
     // Read an Ingredient
