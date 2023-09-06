@@ -14,11 +14,24 @@ data class User(val firstname: String, val name: String, val nbPerHome: Int, val
 class UserService(private val connection: Connection) {
 
     companion object{
-        private const val SELECT_USER_INFO = "SELECT firstname, name, Nb_per_home, FROM groceryPal.Profile WHERE token =  ? ;"
+        private const val SELECT_USER_INFO = "SELECT firstname, name, Nb_per_home FROM groceryPal.Profile WHERE token =  ? ;"
         private const val INSERT_TOKEN = "UPDATE groceryPal.Profile SET token = ? WHERE id = ?;"
-
+        private const val SELECT_ID = "SELECT id FROM groceryPal.Profile WHERE token = ?;"
         private const val CREATE_USER = "INSERT INTO groceryPal.Profile(firstname, Name, nb_per_home, email, pwdHash, salt) VALUES (?,?,?,?,?,?) RETURNING id"
         private const val SELECT_SALT_AND_HASH = "SELECT pwd, salt, id FROM groceryPal.Profile WHERE email = ?;"
+    }
+
+    suspend fun getUserId(token: String) : Int? = withContext(Dispatchers.IO){
+        val statement = connection.prepareStatement(SELECT_ID)
+        statement.setString(1, token)
+        val resultSet = statement.executeQuery()
+
+        if (!resultSet.next()) {
+            return@withContext null
+        }
+
+        return@withContext resultSet.getInt("id")
+
     }
 
     /**
@@ -72,7 +85,9 @@ class UserService(private val connection: Connection) {
 
             val token = generateAuthToken()
             val statementToken = connection.prepareStatement(INSERT_TOKEN)
-            statementToken.setInt(1, id)
+            statementToken.setString(1, token)
+            statementToken.setInt(2, id)
+
             val resultSetToken = statementToken.executeQuery()
 
             if(!resultSetToken.next()) return@withContext null
