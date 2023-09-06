@@ -122,7 +122,7 @@ fun Application.configureDatabases() {
                 }
             }
         }
-        route("/Account"){
+        route("/account"){
             post("/login"){
                 try {
 
@@ -134,10 +134,10 @@ fun Application.configureDatabases() {
 
                     if (!token.isNullOrEmpty()) {
 
-                        // Renvoyez le token au client
+                        // send the token to the client
                         call.respondText(token, ContentType.Application.Json, HttpStatusCode.OK)
                     } else {
-                        // Authentification échouée
+                        //  Authentication failed
                         call.respond(HttpStatusCode.Unauthorized, "Incorrect credentials")
                     }
                 } catch (e: Exception) {
@@ -145,19 +145,21 @@ fun Application.configureDatabases() {
                 }
             }
 
-            post("createAccount"){
+            post("/createAccount"){
                 try {
                     val parameters = call.receiveParameters()
-                    val firstname = parameters["firstname"].orEmpty()
-                    val name = parameters["name"].orEmpty()
-                    val nbPerHomeString = parameters["NbPerHome"]
-                    val email = parameters["email"].orEmpty()
-                    val password = parameters["password"].orEmpty()
+                    val firstname = parameters["firstname"] ?: throw IllegalArgumentException("Incorrect field")
+                    val name = parameters["name"] ?: throw IllegalArgumentException("Incorrect field")
+                    val nbPerHome = parameters["NbPerHome"] ?.toInt() ?: throw IllegalArgumentException("Incorrect field")
+                    val email = parameters["email"] ?: throw IllegalArgumentException("Incorrect field")
+                    val password = parameters["password"] ?: throw IllegalArgumentException("Incorrect field")
 
-                    if (nbPerHomeString.isNullOrEmpty()){
+                    val emailRegex = Regex("^[A-Za-z0-9+_.-]+@(.+)$")
+                    val isEmailValid = emailRegex.matches(email)
+
+                    if (firstname.isBlank() || name.isBlank() || !isEmailValid){
                         call.respond(HttpStatusCode.Unauthorized, "Incorrect field")
                     }
-                    val nbPerHome = nbPerHomeString!!.toInt()
 
                     val user = User(firstname, name, nbPerHome,email)
                     val response = userService.createUser(user, password)
@@ -174,24 +176,23 @@ fun Application.configureDatabases() {
 
         }
 
-        route("/User"){
-            get("userInfo"){
-                try {
-                    val parameters = call.receiveParameters()
-                    val token = parameters["token"].orEmpty()
+        get("/user"){
+            try {
+                val parameters = call.receiveParameters()
+                val token = parameters["token"].orEmpty()
 
-                    if (token.isEmpty()){
-                        call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
-                    }else {
-                        val info = userService.getUserInfo(token)
-                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
-                    }
-
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                if (token.isEmpty()){
+                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
+                }else {
+                    val info = userService.getUserInfo(token)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
                 }
+
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
             }
         }
+
     }
 }
 
