@@ -2,6 +2,7 @@ package ch.heigvd.database
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -14,6 +15,7 @@ fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
     val recipeService = RecipeService(dbConnection, ingredientService)
+    val userService = UserService(dbConnection)
     routing {
         route("/ingredients") {
             // Read all ingredients
@@ -38,6 +40,7 @@ fun Application.configureDatabases() {
                     }
                 }
             }
+            // TODO protection
             // Read all Ingredients linked to a recipe, with their quantity
             get("/from_recipe/{id}") {
                 val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
@@ -61,62 +64,90 @@ fun Application.configureDatabases() {
                     call.respond(HttpStatusCode.InternalServerError)
                 }
             }
-            // TODO Protect
-            // TODO get automatically the user id
             route("/personal") {
-                route("{userId}") {
-                    // Read all personal recipes
-                    get() {
-                        val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
-                        try {
-                            val recipes = recipeService.readAllPersonal(id)
-                            call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
-                        } catch (e: Exception) {
-                            call.respond(HttpStatusCode.NotFound)
-                        }
-                    }
-                    // Create a new personal recipe
-                    post() {
-                        val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
-                        try {
-                            val recipeJson = call.receiveText()
-                            val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
-
-                            recipeService.createPersonal(userId, recipe)
-                            call.respond(HttpStatusCode.OK)
-                        } catch (e: Exception) {
-                            call.respond(HttpStatusCode.NotAcceptable)
-                        }
-                    }
-                }
-            }
-        }
-        // TODO protect
-        // TODO get automatically the user id
-        route("/list") {
-            route("{userid}") {
-                // Read the user's list
+                // Read all personal recipes
                 get() {
-                    val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    val token = call.receiveParameters()["token"].toString()
+                    if(token == "null") {
+                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                        return@get
+                    }
+                    val userId = userService.getUserId(token)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@get
+                    }
                     try {
-                        val ingredients = ingredientService.readFromList(id)
-                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                        val recipes = recipeService.readAllPersonal(userId)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotFound)
                     }
                 }
                 // Create a new personal recipe
                 post() {
-                    val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    val token = call.receiveParameters()["token"].toString()
+                    if(token == "null") {
+                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                        return@post
+                    }
+                    val userId = userService.getUserId(token)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@post
+                    }
                     try {
-                        val ingredientsJson = call.receiveText()
-                        val ingredients = Json.decodeFromString<List<IngredientService.InList>>(ingredientsJson)
+                        val recipeJson = call.receiveText()
+                        val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
 
-                        ingredientService.setList(userId, ingredients)
+                        recipeService.createPersonal(userId, recipe)
                         call.respond(HttpStatusCode.OK)
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotAcceptable)
                     }
+                }
+            }
+        }
+        route("/list") {
+            // Read the user's list
+            get() {
+                val token = call.receiveParameters()["token"].toString()
+                if(token == "null") {
+                    call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                    return@get
+                }
+                val userId = userService.getUserId(token)
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                    return@get
+                }
+                try {
+                    val ingredients = ingredientService.readFromList(userId)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            }
+            // Create a new personal recipe
+            post() {
+                val token = call.receiveParameters()["token"].toString()
+                if(token == "null") {
+                    call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                    return@post
+                }
+                val userId = userService.getUserId(token)
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                    return@post
+                }
+                try {
+                    val ingredientsJson = call.receiveText()
+                    val ingredients = Json.decodeFromString<List<IngredientService.InList>>(ingredientsJson)
+
+                    ingredientService.setList(userId, ingredients)
+                    call.respond(HttpStatusCode.OK)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotAcceptable)
                 }
             }
         }
