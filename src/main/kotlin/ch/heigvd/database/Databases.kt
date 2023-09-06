@@ -14,6 +14,8 @@ fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
     val recipeService = RecipeService(dbConnection, ingredientService)
+    val userService = UserService(dbConnection)
+
     routing {
         route("/ingredients") {
             // Read all ingredients
@@ -117,6 +119,76 @@ fun Application.configureDatabases() {
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotAcceptable)
                     }
+                }
+            }
+        }
+        route("/Account"){
+            post("/login"){
+                try {
+
+                    val parameters = call.receiveParameters()
+                    val email = parameters["email"]
+                    val password = parameters["password"]
+
+                    val token = userService.loginUser(email.orEmpty(), password.orEmpty())
+
+                    if (!token.isNullOrEmpty()) {
+
+                        // Renvoyez le token au client
+                        call.respondText(token, ContentType.Application.Json, HttpStatusCode.OK)
+                    } else {
+                        // Authentification échouée
+                        call.respond(HttpStatusCode.Unauthorized, "Incorrect credentials")
+                    }
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+
+            post("createAccount"){
+                try {
+                    val parameters = call.receiveParameters()
+                    val firstname = parameters["firstname"].orEmpty()
+                    val name = parameters["name"].orEmpty()
+                    val nbPerHomeString = parameters["NbPerHome"]
+                    val email = parameters["email"].orEmpty()
+                    val password = parameters["password"].orEmpty()
+
+                    if (nbPerHomeString.isNullOrEmpty()){
+                        call.respond(HttpStatusCode.Unauthorized, "Incorrect field")
+                    }
+                    val nbPerHome = nbPerHomeString!!.toInt()
+
+                    val user = User(firstname, name, nbPerHome,email)
+                    val response = userService.createUser(user, password)
+
+                    if (response) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, "Not able to create user")
+                    }
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+
+        }
+
+        route("/User"){
+            get("userInfo"){
+                try {
+                    val parameters = call.receiveParameters()
+                    val token = parameters["token"].orEmpty()
+
+                    if (token.isEmpty()){
+                        call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
+                    }else {
+                        val info = userService.getUserInfo(token)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                    }
+
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
                 }
             }
         }

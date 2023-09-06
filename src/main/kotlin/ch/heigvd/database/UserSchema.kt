@@ -102,7 +102,7 @@ class UserService(private val connection: Connection) {
      * function to create a new user
      * id field isn't used
      */
-    suspend fun  createUser(user: User, password: String) = withContext(Dispatchers.IO) {
+    suspend fun  createUser(user: User, password: String) : Boolean = withContext(Dispatchers.IO) {
 
         try {
             val statement = connection.prepareStatement(CREATE_USER)
@@ -120,15 +120,15 @@ class UserService(private val connection: Connection) {
 
             val resultSet = statement.executeQuery()
             if (!resultSet.next()){
-                throw InternalError("Could not create user\n")
+                return@withContext false
+                //throw InternalError("Could not create user\n")
             }
 
-
-
-            return@withContext resultSet.getInt("id")
+            return@withContext true//resultSet.getInt("id")
 
         } catch (e : Exception) {
-            throw e
+            //throw e
+            return@withContext false
         }
     }
 
