@@ -179,7 +179,7 @@ class UserService(private val connection: Connection) {
     /**
      * Function witch generate a session token.
      */
-    fun generateAuthToken(): String {
+    private fun generateAuthToken(): String {
         val uuid = UUID.randomUUID()
         return uuid.toString()
     }
