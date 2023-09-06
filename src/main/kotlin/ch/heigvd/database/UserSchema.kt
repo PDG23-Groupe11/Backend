@@ -6,23 +6,47 @@ import kotlinx.serialization.Serializable
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.sql.Connection
+import java.util.UUID
 
 @Serializable
 
-data class User(val id : Int, val firstname: String, val name: String, val nbPerHome: Int, val email: String)
+data class User(val firstname: String, val name: String, val nbPerHome: Int, val email: String)
 class UserService(private val connection: Connection) {
 
     companion object{
-        private const val SELECT_USER_INFO = "SELECT id, firstname, name, Nb_per_home, FROM groceryPal.Profile WHERE email =  ? ;"
+        private const val SELECT_USER_INFO = "SELECT firstname, name, Nb_per_home, FROM groceryPal.Profile WHERE token =  ? ;"
+        private const val INSERT_TOKEN = "UPDATE groceryPal.Profile SET token = ? WHERE id = ?;"
+
         private const val CREATE_USER = "INSERT INTO groceryPal.Profile(firstname, Name, nb_per_home, email, pwdHash, salt) VALUES (?,?,?,?,?,?) RETURNING id"
-        private const val SELECT_SALT_AND_HASH = "SELECT pwd, salt FROM groceryPal.Profile WHERE email = ?;"
+        private const val SELECT_SALT_AND_HASH = "SELECT pwd, salt, id FROM groceryPal.Profile WHERE email = ?;"
+    }
+
+    /**
+     * Function to get the user info
+     * return a datastructures User with all the info
+     */
+
+    suspend fun getUserInfo(token : String) : User? = withContext(Dispatchers.IO){
+        val statement = connection.prepareStatement(SELECT_USER_INFO)
+        statement.setString(1, token)
+        val resultSet = statement.executeQuery()
+
+        if (!resultSet.next()) {
+            return@withContext null
+        }
+
+        return@withContext User(resultSet.getString("firstname"),
+            resultSet.getString("name"),
+            resultSet.getInt("nb_per_home"),
+            resultSet.getString("email"))
+
     }
 
     /**
      * Function to log a user with email and password
      * return the user info
      */
-    suspend fun loginUser(email: String, pwd: String) : User? = withContext(Dispatchers.IO){
+    suspend fun loginUser(email: String, pwd: String) : String? = withContext(Dispatchers.IO){
         // Find salt
         val statement = connection.prepareStatement(SELECT_SALT_AND_HASH)
         statement.setString(1, email)
@@ -35,6 +59,7 @@ class UserService(private val connection: Connection) {
         //get salt
         val saltHex = resultSet.getString("salt")
         val dbPwd = resultSet.getString("pwdHash")
+        val id = resultSet.getInt("id")
 
         val salt = saltHex.decodeHex()
         // hash the password and salt
@@ -44,19 +69,15 @@ class UserService(private val connection: Connection) {
         // compare the hash with the database
         // if correct return the user info
         if(hashCode.toHexString() == dbPwd) {
-            val statementInfo = connection.prepareStatement(SELECT_USER_INFO)
-            statementInfo.setString(1, email)
-            val resultSetInfo = statementInfo.executeQuery()
 
-            if(!resultSetInfo.next()) return@withContext null
+            val token = generateAuthToken()
+            val statementToken = connection.prepareStatement(INSERT_TOKEN)
+            statementToken.setInt(1, id)
+            val resultSetToken = statementToken.executeQuery()
 
-            return@withContext User(
-                resultSetInfo.getInt("id"),
-                resultSetInfo.getString("firstname"),
-                resultSetInfo.getString("name"),
-                resultSetInfo.getInt("nb_per_home"),
-                resultSetInfo.getString("email")
-            )
+            if(!resultSetToken.next()) return@withContext null
+
+            return@withContext token
         }
         // if not null
         return@withContext null
@@ -67,7 +88,7 @@ class UserService(private val connection: Connection) {
      * id field isn't used
      */
     suspend fun  createUser(user: User, password: String) = withContext(Dispatchers.IO) {
-        connection.createStatement().execute("BEGIN TRANSACTION ;")
+
         try {
             val statement = connection.prepareStatement(CREATE_USER)
             // firstname, Name, nb_per_home, email, pwdHash, salt
@@ -87,12 +108,11 @@ class UserService(private val connection: Connection) {
                 throw InternalError("Could not create user\n")
             }
 
-            connection.createStatement().execute("COMMIT;")
+
 
             return@withContext resultSet.getInt("id")
 
         } catch (e : Exception) {
-            connection.createStatement().execute("ROLLBACK;")
             throw e
         }
     }
@@ -140,5 +160,14 @@ class UserService(private val connection: Connection) {
             .map { it.toInt(16).toByte() }
             .toByteArray()
     }
+
+    /**
+     * Function witch generate a session token.
+     */
+    fun generateAuthToken(): String {
+        val uuid = UUID.randomUUID()
+        return uuid.toString()
+    }
+
 }
 
