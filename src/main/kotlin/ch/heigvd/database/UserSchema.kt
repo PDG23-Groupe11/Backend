@@ -9,18 +9,25 @@ import java.sql.Connection
 import java.util.UUID
 
 @Serializable
-
 data class User(val firstname: String, val name: String, val nbPerHome: Int, val email: String)
+@Serializable
+data class Credentials(val email: String, val password: String)
+@Serializable
+data class FullUser(val firstname: String, val name: String, val nbPerHome: Int, val email: String, val password: String)
 class UserService(private val connection: Connection) {
 
     companion object{
-        private const val SELECT_USER_INFO = "SELECT firstname, name, Nb_per_home FROM groceryPal.Profile WHERE token =  ? ;"
-        private const val INSERT_TOKEN = "UPDATE groceryPal.Profile SET token = ? WHERE id = ?;"
+        private const val SELECT_USER_INFO = "SELECT firstname, name, Nb_per_home, email FROM groceryPal.Profile WHERE token =  ? ;"
+        private const val INSERT_TOKEN = "UPDATE groceryPal.Profile SET token = ? WHERE id = ? RETURNING token;"
         private const val SELECT_ID = "SELECT id FROM groceryPal.Profile WHERE token = ?;"
         private const val CREATE_USER = "INSERT INTO groceryPal.Profile(firstname, Name, nb_per_home, email, pwdHash, salt) VALUES (?,?,?,?,?,?) RETURNING id"
-        private const val SELECT_SALT_AND_HASH = "SELECT pwd, salt, id FROM groceryPal.Profile WHERE email = ?;"
+        private const val SELECT_SALT_AND_HASH = "SELECT pwdhash, salt, id FROM groceryPal.Profile WHERE email = ?;"
     }
 
+    /**
+     * Function to get the user id
+     * return a int
+     */
     suspend fun getUserId(token: String) : Int? = withContext(Dispatchers.IO){
         val statement = connection.prepareStatement(SELECT_ID)
         statement.setString(1, token)
@@ -31,14 +38,12 @@ class UserService(private val connection: Connection) {
         }
 
         return@withContext resultSet.getInt("id")
-
     }
 
     /**
      * Function to get the user info
      * return a datastructures User with all the info
      */
-
     suspend fun getUserInfo(token : String) : User? = withContext(Dispatchers.IO){
         val statement = connection.prepareStatement(SELECT_USER_INFO)
         statement.setString(1, token)
@@ -59,10 +64,10 @@ class UserService(private val connection: Connection) {
      * Function to log a user with email and password
      * return the user info
      */
-    suspend fun loginUser(email: String, pwd: String) : String? = withContext(Dispatchers.IO){
+    suspend fun loginUser(credentials : Credentials) : String? = withContext(Dispatchers.IO){
         // Find salt
         val statement = connection.prepareStatement(SELECT_SALT_AND_HASH)
-        statement.setString(1, email)
+        statement.setString(1, credentials.email)
         val resultSet = statement.executeQuery()
 
         if (!resultSet.next()) {
@@ -76,7 +81,7 @@ class UserService(private val connection: Connection) {
 
         val salt = saltHex.decodeHex()
         // hash the password and salt
-        val hashCode = hashPwd(pwd, salt)
+        val hashCode = hashPwd(credentials.password, salt)
 
 
         // compare the hash with the database
@@ -102,7 +107,7 @@ class UserService(private val connection: Connection) {
      * function to create a new user
      * id field isn't used
      */
-    suspend fun  createUser(user: User, password: String) : Boolean = withContext(Dispatchers.IO) {
+    suspend fun  createUser(user: FullUser) : Boolean = withContext(Dispatchers.IO) {
 
         try {
             val statement = connection.prepareStatement(CREATE_USER)
@@ -113,7 +118,7 @@ class UserService(private val connection: Connection) {
             statement.setString(4, user.email)
 
             val salt = generateRandomSalt()
-            val hashHex = hashPwd(password, salt).toHexString()
+            val hashHex = hashPwd(user.password, salt).toHexString()
             val saltHex = salt.toHexString()
             statement.setString(5, hashHex)
             statement.setString(6, saltHex)

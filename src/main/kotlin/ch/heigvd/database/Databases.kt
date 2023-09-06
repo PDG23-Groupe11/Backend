@@ -125,12 +125,10 @@ fun Application.configureDatabases() {
         route("/account"){
             post("/login"){
                 try {
+                    val credentialsJson = call.receiveText()
+                    val credentialsDec = Json.decodeFromString<Credentials>(credentialsJson)
 
-                    val parameters = call.receiveParameters()
-                    val email = parameters["email"]
-                    val password = parameters["password"]
-
-                    val token = userService.loginUser(email.orEmpty(), password.orEmpty())
+                    val token = userService.loginUser(credentialsDec)
 
                     if (!token.isNullOrEmpty()) {
 
@@ -147,22 +145,17 @@ fun Application.configureDatabases() {
 
             post("/createAccount"){
                 try {
-                    val parameters = call.receiveParameters()
-                    val firstname = parameters["firstname"] ?: throw IllegalArgumentException("Incorrect field")
-                    val name = parameters["name"] ?: throw IllegalArgumentException("Incorrect field")
-                    val nbPerHome = parameters["NbPerHome"] ?.toInt() ?: throw IllegalArgumentException("Incorrect field")
-                    val email = parameters["email"] ?: throw IllegalArgumentException("Incorrect field")
-                    val password = parameters["password"] ?: throw IllegalArgumentException("Incorrect field")
+                    val userJson = call.receiveText()
+                    val userDec = Json.decodeFromString<FullUser>(userJson)
 
                     val emailRegex = Regex("^[A-Za-z0-9+_.-]+@(.+)$")
-                    val isEmailValid = emailRegex.matches(email)
+                    val isEmailValid = emailRegex.matches(userDec.email)
 
-                    if (firstname.isBlank() || name.isBlank() || !isEmailValid){
+                    if (userDec.firstname.isBlank() || userDec.name.isBlank() || !isEmailValid){
                         call.respond(HttpStatusCode.Unauthorized, "Incorrect field")
                     }
 
-                    val user = User(firstname, name, nbPerHome,email)
-                    val response = userService.createUser(user, password)
+                    val response = userService.createUser(userDec)
 
                     if (response) {
                         call.respond(HttpStatusCode.OK)
@@ -170,28 +163,34 @@ fun Application.configureDatabases() {
                         call.respond(HttpStatusCode.BadRequest, "Not able to create user")
                     }
                 } catch (e: Exception) {
+                    println(e)
                     call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
                 }
             }
 
         }
+        route ("/user"){
+            route("{token}"){
+                get(){
+                    try {
 
-        get("/user"){
-            try {
-                val parameters = call.receiveParameters()
-                val token = parameters["token"].orEmpty()
+                        val token = call.parameters["token"] ?: throw IllegalArgumentException("Invalid token")
 
-                if (token.isEmpty()){
-                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
-                }else {
-                    val info = userService.getUserInfo(token)
-                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                        if (token.isEmpty()){
+                            call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
+                        }else {
+                            val info = userService.getUserInfo(token)
+                            call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                        }
+
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                    }
                 }
-
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
             }
+
         }
+
 
     }
 }
