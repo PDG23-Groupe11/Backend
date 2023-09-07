@@ -35,6 +35,10 @@ jobs:
       run: ./gradlew installDist
 
     - name: Run Unit Test1
+      env:
+        POSTGRES_URL: ${{secrets.POSTGRES_URL}}
+        POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+        POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
       run: ./gradlew test
 
       # Next only run for release :
