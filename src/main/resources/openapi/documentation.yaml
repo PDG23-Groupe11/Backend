@@ -116,13 +116,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                content:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/CompleteRecipe"
-                  required: true
+              $ref: "#/components/schemas/CompleteRecipe"
 
       responses:
         "200":
