@@ -158,7 +158,7 @@ class IngredientService(private val connection: Connection) {
         statement.setInt(2, ingredient.id)
         statement.setInt(3, ingredient.unitId)
         statement.setInt(4, ingredient.quantity)
-        statement.setInt(4, ingredient.quantity)
+        statement.setBoolean(5, ingredient.buy)
 
         // TODO check if succeeded
         statement.execute()

@@ -151,13 +151,10 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                content:
-                  required: true
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/Ingredient_InList"
+              required: true
+              type: array
+              items:
+                $ref: "#/components/schemas/Ingredient_InList"
       responses:
         "200":
           description: "OK"
@@ -385,6 +382,8 @@ components:
           type: integer
         quantity:
           type: integer
+        buy:
+          type: boolean
     Ingredient_InList:
       type: object
       properties:
