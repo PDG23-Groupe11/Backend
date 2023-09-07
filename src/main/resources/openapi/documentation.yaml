@@ -287,10 +287,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-        "400":
-          description: "Incorrect values"
+        "401":
+          description: "Incorrect bearer token"
         "500":
           description: "Internal server error"
+    post:
+      description: "Update an account's details"
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: "OK"
+        "401":
+          description: "Incorrect bearer token"
+        "500":
+          description: "Internal server error"
+
 
 components:
   securitySchemes:

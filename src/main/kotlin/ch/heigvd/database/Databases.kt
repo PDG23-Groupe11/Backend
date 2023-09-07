@@ -163,6 +163,7 @@ fun Application.configureDatabases() {
 
                     if (userDec.firstname.isBlank() || userDec.name.isBlank() || !isEmailValid){
                         call.respond(HttpStatusCode.BadRequest, "Incorrect field")
+                        return@post
                     }
 
                     val response = userService.createUser(userDec)
@@ -195,6 +196,27 @@ fun Application.configureDatabases() {
                     } else {
                         call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
                     }
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+            post(){
+                try {
+                    val userId = handleToken(call.request.authorization(), userService)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@post
+                    }
+                    val user = Json.decodeFromString<User>(call.receiveText())
+                    val emailRegex = Regex("^[A-Za-z0-9+_.-]+@(.+)$")
+                    val isEmailValid = emailRegex.matches(user.email)
+                    if (user.firstname.isBlank() || user.name.isBlank() || !isEmailValid){
+                        call.respond(HttpStatusCode.BadRequest, "Incorrect field")
+                        return@post
+                    }
+                    userService.updateUser(userId, user)
+                    call.respond(HttpStatusCode.OK)
+
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
                 }

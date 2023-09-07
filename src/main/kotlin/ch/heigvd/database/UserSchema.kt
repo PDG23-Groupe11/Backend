@@ -22,6 +22,7 @@ class UserService(private val connection: Connection) {
         private const val SELECT_ID = "SELECT id FROM groceryPal.Profile WHERE token = ?;"
         private const val CREATE_USER = "INSERT INTO groceryPal.Profile(firstname, Name, nb_per_home, email, pwdHash, salt) VALUES (?,?,?,?,?,?) RETURNING id"
         private const val SELECT_SALT_AND_HASH = "SELECT pwdhash, salt, id FROM groceryPal.Profile WHERE email = ?;"
+        private const val UPDATE_USER = "UPDATE groceryPal.Profile SET firstname = ?, Name = ?, nb_per_home = ?, email = ? WHERE id = ?"
     }
 
     /**
@@ -136,6 +137,18 @@ class UserService(private val connection: Connection) {
             return@withContext false
         }
     }
+
+    suspend fun updateUser(userId : Int, user : User ) = withContext(Dispatchers.IO) {
+        val statement = connection.prepareStatement(UPDATE_USER)
+        statement.setString(1, user.firstname)
+        statement.setString(2, user.name)
+        statement.setInt(3, user.nbPerHome)
+        statement.setString(4, user.email)
+        statement.setInt(5, userId)
+
+        statement.execute()
+    }
+
 
     /**
      * Function : hash the password with a salt
