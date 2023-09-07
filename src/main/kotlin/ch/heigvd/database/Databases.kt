@@ -68,12 +68,7 @@ fun Application.configureDatabases() {
             route("/personal") {
                 // Read all personal recipes
                 get() {
-                    val token = call.receiveParameters()["token"].toString()
-                    if(token == "null") {
-                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
-                        return@get
-                    }
-                    val userId = userService.getUserId(token)
+                    val userId = handleToken(call.request.authorization(), userService)
                     if (userId == null) {
                         call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
                         return@get
@@ -87,12 +82,7 @@ fun Application.configureDatabases() {
                 }
                 // Create a new personal recipe
                 post() {
-                    val token = call.receiveParameters()["token"].toString()
-                    if(token == "null") {
-                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
-                        return@post
-                    }
-                    val userId = userService.getUserId(token)
+                    val userId = handleToken(call.request.authorization(), userService)
                     if (userId == null) {
                         call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
                         return@post
@@ -112,12 +102,7 @@ fun Application.configureDatabases() {
         route("/list") {
             // Read the user's list
             get() {
-                val token = call.receiveParameters()["token"].toString()
-                if(token == "null") {
-                    call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
-                    return@get
-                }
-                val userId = userService.getUserId(token)
+                val userId = handleToken(call.request.authorization(), userService)
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
                     return@get
@@ -131,12 +116,7 @@ fun Application.configureDatabases() {
             }
             // Create a new personal recipe
             post() {
-                val token = call.receiveParameters()["token"].toString()
-                if(token == "null") {
-                    call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
-                    return@post
-                }
-                val userId = userService.getUserId(token)
+                val userId = handleToken(call.request.authorization(), userService)
                 if (userId == null) {
                     call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
                     return@post
@@ -202,24 +182,19 @@ fun Application.configureDatabases() {
         route ("/user"){
             get(){
                 try {
-                    var token = call.request.authorization()
-                    if(token == null) {
-                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                    val authHeader = call.request.authorization()
+                    if (authHeader == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Missing auth token")
                         return@get
                     }
-                    token = token.split("Bearer ")[1];
-                    val userId = userService.getUserId(token)
-                    if (userId == null) {
-                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
-                        return@get
-                }
-                if (token.isEmpty()){
-                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
-                } else {
-                    val info = userService.getUserInfo(token)
-                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
-                }
+                    val token = authHeader.split("Bearer ")[1];
 
+                    val info = userService.getUserInfo(token)
+                    if(info == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid auth token")
+                    } else {
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                    }
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
                 }
@@ -248,4 +223,15 @@ fun Application.connectToPostgres(embedded: Boolean): Connection {
 
         return DriverManager.getConnection(url, user, password)
     }
+}
+
+/**
+ * Takes an authorization header value, and try to find the linked user. Null if not found
+ */
+suspend fun handleToken(authorizationHeader: String?, userService: UserService): Int? {
+    if (authorizationHeader == null) {
+        return null
+    }
+    val token = authorizationHeader.split("Bearer ")[1];
+    return userService.getUserId(token);
 }

@@ -91,17 +91,8 @@ paths:
   /recipes/personal:
     get:
       description: "Read all personal recipes."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentification token
-                  required: true
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: "OK"
@@ -118,6 +109,8 @@ paths:
           description: "Not Found"
     post:
       description: "Add a personnal recipe."
+      security:
+        - bearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -125,10 +118,6 @@ paths:
             schema:
               type: object
               properties:
-                token:
-                  type: string
-                  description: Authentification token
-                  required: true
                 content:
                   type: array
                   items:
@@ -143,17 +132,8 @@ paths:
   /list:
     get:
       description: "Read all Ingredients in a shopping list, with their quantity"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentification token
-                  required: true
+      security:
+        - bearerAuth: [ ]
       responses:
         "200":
           description: "OK"
@@ -170,6 +150,8 @@ paths:
           description: "Not Found"
     post:
       description: "Set the entire shopping list"
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -177,10 +159,6 @@ paths:
             schema:
               type: object
               properties:
-                token:
-                  type: string
-                  description: Authentification token
-                  required: true
                 content:
                   required: true
                   type: array
@@ -285,7 +263,7 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: The authentification token
+                    description: The authentification Bearer token
         "401":
           description: "Incorrect credentials"
         "500":
