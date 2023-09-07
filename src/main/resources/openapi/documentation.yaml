@@ -88,6 +88,17 @@ paths:
   /recipes/personal:
     get:
       description: "Read all personal recipes."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentification token
+                  required: true
       responses:
         "200":
           description: "OK"
@@ -103,15 +114,23 @@ paths:
         "404":
           description: "Not Found"
     post:
-      description: "Add a personnal recipe.\n The userID requirement is temporary, and will be changed in the future"
-      parameters:
-        - name: "content"
-          in: "query"
-          required: true
-          schema:
-            type: array
-            items:
-              $ref: "#/components/schemas/CompleteRecipe"
+      description: "Add a personnal recipe."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentification token
+                  required: true
+                content:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CompleteRecipe"
+                  required: true
 
       responses:
         "200":
@@ -121,6 +140,17 @@ paths:
   /list:
     get:
       description: "Read all Ingredients in a shopping list, with their quantity"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentification token
+                  required: true
       responses:
         "200":
           description: "OK"
@@ -137,14 +167,22 @@ paths:
           description: "Not Found"
     post:
       description: "Set the entire shopping list"
-      parameters:
-        - name: "content"
-          in: "query"
-          required: true
-          schema:
-            type: array
-            items:
-              $ref: "#/components/schemas/Ingredient_InList"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentification token
+                  required: true
+                content:
+                  required: true
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Ingredient_InList"
       responses:
         "200":
           description: "OK"
