@@ -181,7 +181,7 @@ fun Application.configureDatabases() {
                     val isEmailValid = emailRegex.matches(userDec.email)
 
                     if (userDec.firstname.isBlank() || userDec.name.isBlank() || !isEmailValid){
-                        call.respond(HttpStatusCode.Unauthorized, "Incorrect field")
+                        call.respond(HttpStatusCode.BadRequest, "Incorrect field")
                     }
 
                     val response = userService.createUser(userDec)
@@ -199,28 +199,31 @@ fun Application.configureDatabases() {
 
         }
         route ("/user"){
-            route("{token}"){
-                get(){
-                    try {
-
-                        val token = call.parameters["token"] ?: throw IllegalArgumentException("Invalid token")
-
-                        if (token.isEmpty()){
-                            call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
-                        }else {
-                            val info = userService.getUserInfo(token)
-                            call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
-                        }
-
-                    } catch (e: Exception) {
-                        call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+            get(){
+                try {
+                    val token = call.receiveParameters()["token"].toString()
+                    if(token == "null") {
+                        call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
+                        return@get
                     }
+                    val userId = userService.getUserId(token)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@get
+                }
+                if (token.isEmpty()){
+                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized log")
+                } else {
+                    val info = userService.getUserInfo(token)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                }
+
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
                 }
             }
 
         }
-
-
     }
 }
 

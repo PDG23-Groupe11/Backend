@@ -255,6 +255,71 @@ paths:
           description: "OK"
         "406":
           description: "Not Acceptable"
+
+  /account/login:
+    post:
+      description: "Login, to get an authentification token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  required: true
+                password:
+                  required: true
+                  type: string
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: The authentification token
+        "401":
+          description: "Incorrect credentials"
+        "500":
+          description: "Internal server error"
+  /account/createAccount:
+    post:
+      description: "Creates a new user account"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FullUser"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Incorrect values"
+        "500":
+          description: "Internal server error"
+  /user:
+    get:
+      description: "Get the account details"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Incorrect values"
+        "500":
+          description: "Internal server error"
+
 components:
   schemas:
     Recipe:
@@ -352,3 +417,34 @@ components:
         quantity:
           type: integer
           description: The quantity of the ingredient in the list
+    FullUser:
+      type: object
+      properties:
+        firstname:
+          type: string
+          required: true
+        name:
+          required: true
+          type: string
+        nbPerHome:
+          required: true
+          type: integer
+          description: "Default number of person used for recipes"
+        email:
+          type: string
+          required: true
+        password:
+          required: true
+          type: string
+    User:
+      type: object
+      properties:
+        firstname:
+          type: string
+        name:
+          type: string
+        nbPerHome:
+          type: integer
+          description: "Default number of person used for recipes"
+        email:
+          type: string
