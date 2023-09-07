@@ -141,9 +141,10 @@ fun Application.configureDatabases() {
                     val token = userService.loginUser(credentialsDec)
 
                     if (!token.isNullOrEmpty()) {
-
+                        // Authentication successful
+                        val tokenJson = TokenStruct(token)
                         // send the token to the client
-                        call.respondText(token, ContentType.Application.Json, HttpStatusCode.OK)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(tokenJson).toString())
                     } else {
                         //  Authentication failed
                         call.respond(HttpStatusCode.Unauthorized, "Incorrect credentials")
