@@ -14,6 +14,8 @@ data class User(val firstname: String, val name: String, val nbPerHome: Int, val
 data class Credentials(val email: String, val password: String)
 @Serializable
 data class FullUser(val firstname: String, val name: String, val nbPerHome: Int, val email: String, val password: String)
+@Serializable
+data class TokenStruct(val token: String)
 class UserService(private val connection: Connection) {
 
     companion object{

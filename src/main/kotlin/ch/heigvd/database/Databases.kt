@@ -141,9 +141,10 @@ fun Application.configureDatabases() {
                     val token = userService.loginUser(credentialsDec)
 
                     if (!token.isNullOrEmpty()) {
-
+                        // Authentication successful
+                        val tokenJson = TokenStruct(token)
                         // send the token to the client
-                        call.respondText(token, ContentType.Application.Json, HttpStatusCode.OK)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(tokenJson).toString())
                     } else {
                         //  Authentication failed
                         call.respond(HttpStatusCode.Unauthorized, "Incorrect credentials")
@@ -188,7 +189,7 @@ fun Application.configureDatabases() {
                         call.respond(HttpStatusCode.Unauthorized, "Missing auth token")
                         return@get
                     }
-                    val token = authHeader.split("Bearer ")[1];
+                    val token = authHeader.split("Bearer ")[1]
 
                     val info = userService.getUserInfo(token)
                     if(info == null) {
@@ -254,6 +255,6 @@ suspend fun handleToken(authorizationHeader: String?, userService: UserService):
     if (authorizationHeader == null) {
         return null
     }
-    val token = authorizationHeader.split("Bearer ")[1];
-    return userService.getUserId(token);
+    val token = authorizationHeader.split("Bearer ")[1]
+    return userService.getUserId(token)
 }
