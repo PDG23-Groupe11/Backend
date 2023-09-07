@@ -1,5 +1,10 @@
 # Grocerypal - backend
 
+## Configuration
+Fait par variable d'environnement !
+
+Voir src/main/resources/application.conf
+
 ## Build
 `./gradlew build`
 

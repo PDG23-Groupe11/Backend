@@ -2,6 +2,8 @@ package ch.heigvd.database
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -14,6 +16,7 @@ fun Application.configureDatabases() {
     val dbConnection: Connection = connectToPostgres(embedded = false)
     val ingredientService = IngredientService(dbConnection)
     val recipeService = RecipeService(dbConnection, ingredientService)
+    val userService = UserService(dbConnection)
     routing {
         route("/ingredients") {
             // Read all ingredients
@@ -38,6 +41,7 @@ fun Application.configureDatabases() {
                     }
                 }
             }
+            // TODO protection
             // Read all Ingredients linked to a recipe, with their quantity
             get("/from_recipe/{id}") {
                 val id = call.parameters["id"]?.toInt() ?: throw IllegalArgumentException("Invalid ID")
@@ -61,64 +65,163 @@ fun Application.configureDatabases() {
                     call.respond(HttpStatusCode.InternalServerError)
                 }
             }
-            // TODO Protect
-            // TODO get automatically the user id
             route("/personal") {
-                route("{userId}") {
-                    // Read all personal recipes
-                    get() {
-                        val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
-                        try {
-                            val recipes = recipeService.readAllPersonal(id)
-                            call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
-                        } catch (e: Exception) {
-                            call.respond(HttpStatusCode.NotFound)
-                        }
-                    }
-                    // Create a new personal recipe
-                    post() {
-                        val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
-                        try {
-                            val recipeJson = call.receiveText()
-                            val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
-
-                            recipeService.createPersonal(userId, recipe)
-                            call.respond(HttpStatusCode.OK)
-                        } catch (e: Exception) {
-                            call.respond(HttpStatusCode.NotAcceptable)
-                        }
-                    }
-                }
-            }
-        }
-        // TODO protect
-        // TODO get automatically the user id
-        route("/list") {
-            route("{userid}") {
-                // Read the user's list
+                // Read all personal recipes
                 get() {
-                    val id = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    val userId = handleToken(call.request.authorization(), userService)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@get
+                    }
                     try {
-                        val ingredients = ingredientService.readFromList(id)
-                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                        val recipes = recipeService.readAllPersonal(userId)
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(recipes).toString())
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotFound)
                     }
                 }
                 // Create a new personal recipe
                 post() {
-                    val userId = call.parameters["userId"]?.toInt() ?: throw IllegalArgumentException("Invalid user ID")
+                    val userId = handleToken(call.request.authorization(), userService)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@post
+                    }
                     try {
-                        val quantitiesJson = call.receiveText()
-                        val quantities = Json.decodeFromString<List<IngredientService.Quantity>>(quantitiesJson)
+                        val recipeJson = call.receiveText()
+                        val recipe = Json.decodeFromString<RecipeService.CompleteRecipe>(recipeJson)
 
-                        ingredientService.setList(userId, quantities)
+                        recipeService.createPersonal(userId, recipe)
                         call.respond(HttpStatusCode.OK)
                     } catch (e: Exception) {
                         call.respond(HttpStatusCode.NotAcceptable)
                     }
                 }
             }
+        }
+        route("/list") {
+            // Read the user's list
+            get() {
+                val userId = handleToken(call.request.authorization(), userService)
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                    return@get
+                }
+                try {
+                    val ingredients = ingredientService.readFromList(userId)
+                    call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(ingredients).toString())
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotFound)
+                }
+            }
+            // Create a new personal recipe
+            post() {
+                val userId = handleToken(call.request.authorization(), userService)
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                    return@post
+                }
+                try {
+                    val ingredientsJson = call.receiveText()
+                    val ingredients = Json.decodeFromString<List<IngredientService.InList>>(ingredientsJson)
+
+                    ingredientService.setList(userId, ingredients)
+                    call.respond(HttpStatusCode.OK)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.NotAcceptable)
+                }
+            }
+        }
+        route("/account"){
+            post("/login"){
+                try {
+                    val credentialsJson = call.receiveText()
+                    val credentialsDec = Json.decodeFromString<Credentials>(credentialsJson)
+
+                    val token = userService.loginUser(credentialsDec)
+
+                    if (!token.isNullOrEmpty()) {
+
+                        // send the token to the client
+                        call.respondText(token, ContentType.Application.Json, HttpStatusCode.OK)
+                    } else {
+                        //  Authentication failed
+                        call.respond(HttpStatusCode.Unauthorized, "Incorrect credentials")
+                    }
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+
+            post("/createAccount"){
+                try {
+                    val userJson = call.receiveText()
+                    val userDec = Json.decodeFromString<FullUser>(userJson)
+
+                    val emailRegex = Regex("^[A-Za-z0-9+_.-]+@(.+)$")
+                    val isEmailValid = emailRegex.matches(userDec.email)
+
+                    if (userDec.firstname.isBlank() || userDec.name.isBlank() || !isEmailValid){
+                        call.respond(HttpStatusCode.BadRequest, "Incorrect field")
+                        return@post
+                    }
+
+                    val response = userService.createUser(userDec)
+
+                    if (response) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, "Not able to create user")
+                    }
+                } catch (e: Exception) {
+                    println(e)
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+
+        }
+        route ("/user"){
+            get(){
+                try {
+                    val authHeader = call.request.authorization()
+                    if (authHeader == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Missing auth token")
+                        return@get
+                    }
+                    val token = authHeader.split("Bearer ")[1];
+
+                    val info = userService.getUserInfo(token)
+                    if(info == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid auth token")
+                    } else {
+                        call.respond(HttpStatusCode.OK, Json.encodeToJsonElement(info).toString())
+                    }
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+            post(){
+                try {
+                    val userId = handleToken(call.request.authorization(), userService)
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
+                        return@post
+                    }
+                    val user = Json.decodeFromString<User>(call.receiveText())
+                    val emailRegex = Regex("^[A-Za-z0-9+_.-]+@(.+)$")
+                    val isEmailValid = emailRegex.matches(user.email)
+                    if (user.firstname.isBlank() || user.name.isBlank() || !isEmailValid){
+                        call.respond(HttpStatusCode.BadRequest, "Incorrect field")
+                        return@post
+                    }
+                    userService.updateUser(userId, user)
+                    call.respond(HttpStatusCode.OK)
+
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
+                }
+            }
+
         }
     }
 }
@@ -142,4 +245,15 @@ fun Application.connectToPostgres(embedded: Boolean): Connection {
 
         return DriverManager.getConnection(url, user, password)
     }
+}
+
+/**
+ * Takes an authorization header value, and try to find the linked user. Null if not found
+ */
+suspend fun handleToken(authorizationHeader: String?, userService: UserService): Int? {
+    if (authorizationHeader == null) {
+        return null
+    }
+    val token = authorizationHeader.split("Bearer ")[1];
+    return userService.getUserId(token);
 }
