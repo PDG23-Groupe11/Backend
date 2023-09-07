@@ -5,7 +5,10 @@ info:
   version: "0.0.1"
 servers:
 # TODO
-  - url: "http://0.0.0.0:8080"
+  - url: "http://127.0.0.1:8080"
+    description: Local testing environement
+  - url: "http://35.246.127.184:8080"
+    description: Production
 paths:
   /ingredients:
     get:
@@ -306,21 +309,25 @@ paths:
   /user:
     get:
       description: "Get the account details"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User"
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
         "400":
           description: "Incorrect values"
         "500":
           description: "Internal server error"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Recipe:
       type: object

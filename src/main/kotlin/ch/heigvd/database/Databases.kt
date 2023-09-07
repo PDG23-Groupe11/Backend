@@ -2,6 +2,7 @@ package ch.heigvd.database
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -201,11 +202,12 @@ fun Application.configureDatabases() {
         route ("/user"){
             get(){
                 try {
-                    val token = call.receiveParameters()["token"].toString()
-                    if(token == "null") {
+                    var token = call.request.authorization()
+                    if(token == null) {
                         call.respond(HttpStatusCode.Unauthorized, "Missing authentification token")
                         return@get
                     }
+                    token = token.split("Bearer ")[1];
                     val userId = userService.getUserId(token)
                     if (userId == null) {
                         call.respond(HttpStatusCode.Unauthorized, "Invalid authentification token")
