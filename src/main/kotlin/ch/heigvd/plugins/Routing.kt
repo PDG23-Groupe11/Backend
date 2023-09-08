@@ -12,7 +12,7 @@ import java.io.File
 
 fun Application.configureRouting() {
     val recipeImagesPath = "static/recipeImages"
-    val supportedExtensions = arrayOf("png", "jpeg", "gif", "webp")
+    val supportedExtensions = arrayOf("png", "jpeg", "jpg", "gif", "webp")
 
     // Create the folder for the pictures in case they don't exist
     File(recipeImagesPath).mkdirs()
