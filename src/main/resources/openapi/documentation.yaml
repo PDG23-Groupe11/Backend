@@ -13,6 +13,8 @@ paths:
   /ingredients:
     get:
       description: "Read all ingredients"
+      tags:
+        - ingredients
       responses:
         "200":
           description: "OK"
@@ -30,6 +32,8 @@ paths:
   /ingredients/{id}:
     get:
       description: "Read Ingredient"
+      tags:
+        - ingredients
       parameters:
       - name: "id"
         in: "path"
@@ -51,6 +55,8 @@ paths:
   /ingredients/from_recipe/{id}:
     get:
       description: "Read all Ingredients linked to a recipe, with their quantity"
+      tags:
+        - ingredients
       parameters:
       - name: "id"
         in: "path"
@@ -74,6 +80,8 @@ paths:
   /recipes:
     get:
       description: "Read all generic recipes"
+      tags:
+        - recipes
       responses:
         "200":
           description: "OK"
@@ -91,6 +99,8 @@ paths:
   /recipes/personal:
     get:
       description: "Read all personal recipes."
+      tags:
+        - recipes
       security:
         - bearerAuth: []
       responses:
@@ -109,6 +119,8 @@ paths:
           description: "Not Found"
     post:
       description: "Add a personnal recipe."
+      tags:
+        - recipes
       security:
         - bearerAuth: [ ]
       requestBody:
@@ -126,6 +138,8 @@ paths:
   /list:
     get:
       description: "Read all Ingredients in a shopping list, with their quantity"
+      tags:
+        - list
       security:
         - bearerAuth: [ ]
       responses:
@@ -144,6 +158,8 @@ paths:
           description: "Not Found"
     post:
       description: "Set the entire shopping list"
+      tags:
+        - list
       security:
         - bearerAuth: []
       requestBody:
@@ -190,6 +206,8 @@ paths:
   /static/recipeImages/{recipeId}:
     get:
       description: "Get a Recipe's picture. Offers .png, .webp, .jpeg and .gif"
+      tags:
+        - recipes
       parameters:
         - name: "recipeId"
           in: "path"
@@ -209,6 +227,8 @@ paths:
 
     post:
       description: "Upload new / replace recipe pictures"
+      tags:
+        - recipes
       parameters:
         - name: "recipeId"
           in: "path"
@@ -231,6 +251,8 @@ paths:
   /account/login:
     post:
       description: "Login, to get an authentification token"
+      tags:
+        - account
       requestBody:
         required: true
         content:
@@ -262,6 +284,8 @@ paths:
   /account/createAccount:
     post:
       description: "Creates a new user account"
+      tags:
+        - account
       requestBody:
         required: true
         content:
@@ -278,6 +302,8 @@ paths:
   /user:
     get:
       description: "Get the account details"
+      tags:
+        - account
       security:
         - bearerAuth: []
       responses:
@@ -293,6 +319,8 @@ paths:
           description: "Internal server error"
     post:
       description: "Update an account's details"
+      tags:
+        - account
       security:
         - bearerAuth: [ ]
       requestBody:
@@ -444,3 +472,12 @@ components:
           description: "Default number of person used for recipes"
         email:
           type: string
+tags:
+  - name: ingredients
+    description: Get ingredient details, and ingredients in a given recipe
+  - name: recipes
+    description: Interact with recipes details
+  - name: list
+    description: Interact with a user's shopping list
+  - name: account
+    description: Interact with user accounts
