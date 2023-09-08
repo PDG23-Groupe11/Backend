@@ -1,0 +1,13 @@
+Comment contribuer au projet :
+
+En tant que développeur interne au projet :
+Pour pouvoir effectuer des modifications sur les repos Front-End, Back-end et Documentation (privé), vous pouvez nous contacter pour que l'on vous ajoute en tant que Dev. 
+Cette action vous conférera les droits nécessaires pour apporter toutes les modifications requises, y compris l'accès à notre tableau Kanban si nécessaire.
+
+contact : 
+teams: membre du groupe PDG 11, GroceryPal 
+emails: cedric.centeno@heig-vd.ch, yann-merk@heig-vd.ch, rachel.leupi@heig-vd.ch, laetitia.guidetti@heig-vd.ch
+
+En tant que contributeur externe :
+Les Repos Front-End  et Back-End  sont public,
+ ce qui vous permet de faire de fork le projet et d'effectuer des pull requests qu'un développeur devra valider.
